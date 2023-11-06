@@ -1,0 +1,62 @@
+version: '3'
+services:
+  webserver:
+    image: nginx
+    networks:
+      - mynet
+    volumes:
+       - ./default.conf:/etc/nginx/conf.d/default.conf
+       - "moodle_fpm_mysql_volume:/var/www/html"
+       - "moodle_data_fpm_mysql_volume:/var/moodledata"
+#      - ./nginx/dl-cert2023-2.pem:/etc/nginx/certs/dl-cert2023-2.pem
+#      - ./nginx/dl-key2023-2.pem:/etc/nginx/certs/dl-key2023-2.pem
+    ports:
+      - 80:80
+#      - 8970:8970
+#      - 443:443
+    restart: always
+  moodle:
+    image: denis:latest
+    env_file: .env
+    networks:
+      - mynet
+    volumes:
+      - "moodle_fpm_mysql_volume:/var/www/html"
+      - "moodle_data_fpm_mysql_volume:/var/moodledata"
+      - "./php.ini:/usr/local/etc/php/php.ini"
+    environment:
+      MOODLE_DB_USER: $MOODLE_DB_USER
+      MOODLE_DB_HOST: $MOODLE_DB_HOST
+      MOODLE_DB_PASSWORD: $MOODLE_DB_PASSWORD
+      MOODLE_DB_NAME: $MOODLE_DB_NAME
+      MOODLE_ADMIN: $MOODLE_ADMIN
+      MOODLE_ADMIN_PASSWORD: $MOODLE_ADMIN_PASSWORD
+      MOODLE_URL: $MOODLE_URL
+      MOODLE_ADMIN_EMAIL: $MOODLE_ADMIN_EMAIL
+      MOODLE_SSL: "false"
+      MOODLE_REVERSE_LB: "false"
+#    ports:
+#      - 9000:9000
+    depends_on:
+      - database
+  database:
+    image: mysql
+    networks:
+      - mynet
+    volumes:
+      - "moodle_db_fpm_mysql_volume:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE: $MOODLE_DB_NAME
+      MYSQL_USER: $MOODLE_DB_USER
+      MYSQL_PASSWORD: $MOODLE_DB_PASSWORD
+    ports:
+      - 3306:3306
+networks:
+  mynet:
+    driver: bridge
+
+volumes:
+  moodle_db_fpm_mysql_volume:
+  moodle_fpm_mysql_volume:
+  moodle_data_fpm_mysql_volume:
